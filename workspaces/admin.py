@@ -1,5 +1,5 @@
 from django.contrib import admin
-from workspaces.models import Workspace, WorkspaceMember, Channel, ChannelMember
+from .models import Workspace, WorkspaceMember, Channel, ChannelMember
 
 @admin.register(Workspace)
 class WorkspaceAdmin(admin.ModelAdmin):

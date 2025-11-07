@@ -18,13 +18,13 @@ class Workspace(models.Model):
     on_delete=models.CASCADE,
     related_name='owned_workspaces'#let you access all workspaces a owner owns via user.owned_workspaces.all()
   )
-members = models.ManyToManyField(
+  members = models.ManyToManyField(
   settings.AUTH_USER_MODEL,
   through='WorkspaceMember',#instead of manytomany field you use this to store extra info like roles.
   related_name='Workspace'
 )
-created_at = models.DateTimeField(auto_now_add=True)
-updated_at = models.DateTimeField(auto_now=True)
+  created_at = models.DateTimeField(auto_now_add=True)
+  updated_at = models.DateTimeField(auto_now=True)
 
 class Meta:
   ordering = ['-created_at']
