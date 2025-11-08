@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.core.cache import cache
 from .models import Workspace, WorkspaceMember, Channel, ChannelMember
 from .serializers import (
     WorkspaceSerializer,

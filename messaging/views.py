@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.utils import timezone
+from django.core.cache import cache
+from utils.throttling import MessageRateThrottle
 from .models import Message, DirectMessage, Reaction, Attachment
 from .serializers import (
     MessageSerializer,
@@ -19,6 +21,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     """ViewSet for channel messages"""
     serializer_class = MessageSerializer
     permission_classes = [IsAuthenticated]
+    throttle_classes = [MessageRateThrottle]
 
     def get_queryset(self):
         channel_id = self.request.query_params.get('channel')
@@ -42,6 +45,9 @@ class MessageViewSet(viewsets.ModelViewSet):
             raise PermissionError("You must be a channel member to send messages")
         
         serializer.save(sender=self.request.user)
+        
+        # Invalidate message cache for this channel
+        cache.delete_pattern(f"*channel_messages:{channel_id}*")
 
     def perform_update(self, serializer):
         # Only allow sender to edit

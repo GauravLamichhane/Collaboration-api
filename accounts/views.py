@@ -5,6 +5,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.core.cache import cache
+from utils.throttling import RegistrationRateThrottle
 from .serializers import (
     UserSerializer,
     UserRegistrationSerializer,
@@ -47,7 +49,16 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def me(self, request):
         """Get current user profile"""
+        # Try to get from cache first
+        cache_key = f"user_profile:{request.user.id}"
+        cached_data = cache.get(cache_key)
+        
+        if cached_data:
+            return Response(cached_data)
+        
         serializer = self.get_serializer(request.user)
+        # Cache for 5 minutes
+        cache.set(cache_key, serializer.data, 300)
         return Response(serializer.data)
 
     @action(detail=False, methods=['put', 'patch'])
@@ -60,6 +71,11 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        
+        # Invalidate cache
+        cache_key = f"user_profile:{request.user.id}"
+        cache.delete(cache_key)
+        
         return Response(serializer.data)
 
     @action(detail=False, methods=['post'])
@@ -88,6 +104,15 @@ class UserViewSet(viewsets.ModelViewSet):
         
         request.user.status = status_value
         request.user.save()
+        
+        # Update cache
+        cache_key = f"user_profile:{request.user.id}"
+        cache.delete(cache_key)
+        
+        # Store online status in Redis with TTL
+        online_key = f"user_online:{request.user.id}"
+        cache.set(online_key, status_value, 300)  # 5 min TTL
+        
         return Response({
             'status': status_value,
             'message': 'Status updated successfully'
