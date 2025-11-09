@@ -1,5 +1,5 @@
 from rest_framework.throttling import SimpleRateThrottle
-
+from django.core.cache import cache
 
 class UserRateThrottle(SimpleRateThrottle):
     scope = 'user'
